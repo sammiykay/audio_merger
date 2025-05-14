@@ -150,8 +150,8 @@
   <script>
     const sessionID = Date.now().toString();
     document.getElementById("session_id").value = sessionID;
-
-    const socket = new WebSocket(`ws://${window.location.host}/ws/status/${sessionID}/`);
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${protocol}://${window.location.host}/ws/status/${sessionID}/`);
     const bar = document.getElementById("progress-bar");
     const message = document.getElementById("progress-message");
     const result = document.getElementById("result");
