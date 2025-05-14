@@ -116,7 +116,8 @@ def ajax_merge_audio(request):
                 pass
 
 def download_and_delete(request, filename):
-    file_path = os.path.join("media", filename)
+    from django.conf import settings
+    file_path = os.path.join(settings.MEDIA_ROOT, filename)
     if not os.path.exists(file_path):
         raise Http404("File not found")
     return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=filename)
