@@ -83,7 +83,7 @@ def ajax_merge_audio(request):
 
         send_progress(session_id, "Tagging audio and exporting MP3...")
 
-        final_mp3_path = os.path.join(output_dir, f"{session_id}_output.mp3")
+        final_mp3_path = os.path.join(output_dir, f"{metadata['title']}.mp3")
         AudioSegment.from_wav(temp_wav_path).export(final_mp3_path, format="mp3")
 
         tags = EasyID3(final_mp3_path)
