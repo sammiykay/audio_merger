@@ -1,10 +1,12 @@
 from django.urls import path
-from . import views
 from django.conf import settings
 from django.conf.urls.static import static
+from .views import ajax_merge_audio, download_and_delete, get_progress, home
+
 urlpatterns = [
-    path('merge/', views.ajax_merge_audio, name='ajax_merge_audio'),
-    path('download/<str:filename>/', views.download_and_delete, name='download_and_delete'),
-    path('', views.home, name=''),
+    path('', home, name=''),
+    path('merge/', ajax_merge_audio, name='merge'),
+    path('download/<str:filename>/', download_and_delete, name='download_and_delete'),
+    path('progress/', get_progress, name='get_progress'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

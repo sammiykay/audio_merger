@@ -4,13 +4,6 @@
   <meta charset="UTF-8" />
   <title>TrackForge – Audio Merger</title>
   <style>
-    /* Reset and base styles */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     body {
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, #1e1e2f, #2a2a40);
@@ -150,13 +143,11 @@
   <script>
     const sessionID = Date.now().toString();
     document.getElementById("session_id").value = sessionID;
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${protocol}://${window.location.host}/ws/status/${sessionID}/`);
+
     const bar = document.getElementById("progress-bar");
     const message = document.getElementById("progress-message");
     const result = document.getElementById("result");
 
-    // Define progress phases
     const statusMap = {
       "Uploading": 10,
       "Uploading completed": 30,
@@ -165,17 +156,24 @@
       "complete": 100
     };
 
-    socket.onmessage = function (e) {
-      const data = JSON.parse(e.data);
-      message.textContent = data.status;
-
-      for (let key in statusMap) {
-        if (data.status.toLowerCase().includes(key.toLowerCase())) {
-          bar.style.width = statusMap[key] + "%";
-          break;
-        }
-      }
-    };
+    function startPolling(sessionID) {
+      const interval = setInterval(() => {
+        fetch(`/progress/?session_id=${sessionID}`)
+          .then(res => res.json())
+          .then(data => {
+            const status = data.status;
+            message.textContent = status;
+            for (let key in statusMap) {
+              if (status.toLowerCase().includes(key.toLowerCase())) {
+                bar.style.width = statusMap[key] + "%";
+              }
+            }
+            if (status.includes("✅")) {
+              clearInterval(interval);
+            }
+          });
+      }, 1000);
+    }
 
     const form = document.getElementById("upload-form");
     form.addEventListener("submit", function (e) {
@@ -190,9 +188,9 @@
       xhr.upload.onprogress = function (event) {
         if (event.lengthComputable) {
           const percent = Math.round((event.loaded / event.total) * 100);
-          const uploadStage = Math.floor(percent * 0.3); // 0–30%
-          bar.style.width = `${uploadStage}%`;
-          message.textContent = "Uploading: " + percent + "%";
+          const progress = Math.floor(percent * 0.3); // Upload is 0–30%
+          bar.style.width = `${progress}%`;
+          message.textContent = `Uploading: ${percent}%`;
         }
       };
 
@@ -200,7 +198,6 @@
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
           if (response.status === "success") {
-            message.textContent = "✅ Upload complete!";
             result.innerHTML = `<p><a href="${response.download_url}" download>Download Merged MP3</a></p>`;
           } else {
             message.textContent = "❌ " + response.message;
@@ -209,10 +206,11 @@
       };
 
       xhr.onerror = function () {
-        message.textContent = "❌ Upload error. Please try again.";
+        message.textContent = "❌ Upload failed. Please try again.";
       };
 
       xhr.send(formData);
+      startPolling(sessionID);
     });
   </script>
 </body>
