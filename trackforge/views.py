@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.core.files.storage import FileSystemStorage
@@ -8,10 +8,13 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import os
 import tempfile
+import threading
+import time
 from django.shortcuts import render
 
 def home(request):
     return render(request, 'index.html')
+
 
 
 def send_progress(session_id, status_text):
@@ -23,6 +26,18 @@ def send_progress(session_id, status_text):
             "message": {"status": status_text}
         }
     )
+
+
+def delete_file_delayed(path, delay_seconds=600):
+    def _delete():
+        time.sleep(delay_seconds)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                print(f"🗑️ Auto-deleted: {path}")
+            except Exception as e:
+                print(f"⚠️ Delete failed: {e}")
+    threading.Thread(target=_delete).start()
 
 
 @csrf_exempt
@@ -63,12 +78,12 @@ def ajax_merge_audio(request):
             audio = AudioSegment.from_file(temp_audio.name)
             merged += audio
 
-        temp_wav_path = os.path.join(output_dir, "merged.wav")
+        temp_wav_path = os.path.join(output_dir, f"{session_id}_merged.wav")
         merged.export(temp_wav_path, format="wav")
 
         send_progress(session_id, "Tagging audio and exporting MP3...")
 
-        final_mp3_path = os.path.join(output_dir, f"{metadata['title']}.mp3")
+        final_mp3_path = os.path.join(output_dir, f"{session_id}_output.mp3")
         AudioSegment.from_wav(temp_wav_path).export(final_mp3_path, format="mp3")
 
         tags = EasyID3(final_mp3_path)
@@ -80,8 +95,9 @@ def ajax_merge_audio(request):
         tags.save()
 
         os.remove(temp_wav_path)
+        delete_file_delayed(final_mp3_path, delay_seconds=600)  # auto-delete after 10 min
 
-        output_url = fs.url(os.path.basename(final_mp3_path))
+        output_url = f"/download/{os.path.basename(final_mp3_path)}/"
         send_progress(session_id, "✅ Merging complete. Ready to download.")
 
         return JsonResponse({"status": "success", "download_url": output_url})
@@ -96,3 +112,12 @@ def ajax_merge_audio(request):
                 os.remove(path)
             except Exception:
                 pass
+
+
+def download_and_delete(request, filename):
+    file_path = os.path.join("media", filename)
+    if not os.path.exists(file_path):
+        raise Http404("File not found")
+
+    response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename=filename)
+    return response
