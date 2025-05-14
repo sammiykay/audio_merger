@@ -8,5 +8,4 @@ urlpatterns = [
     path('merge/', ajax_merge_audio, name='merge'),
     path('download/<str:filename>/', download_and_delete, name='download_and_delete'),
     path('progress/', get_progress, name='get_progress'),
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
+]
