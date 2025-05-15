@@ -8,6 +8,19 @@ import os
 import tempfile
 import threading
 import time
+from django.http import JsonResponse, FileResponse, Http404
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.core.files.storage import FileSystemStorage
+from pydub import AudioSegment
+from mutagen.easyid3 import EasyID3
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+import os
+import tempfile
+from django.conf import settings
+import threading
+import time
 
 from django.shortcuts import render
 
@@ -15,21 +28,17 @@ def home(request):
     return render(request, 'index.html')
 
 
-# In-memory progress store (in production: use DB or Redis)
-status_store = {}
 
-def set_status(session_id, status):
-    status_store[session_id] = status
+def send_progress(session_id, status_text):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"status_{session_id}",
+        {
+            "type": "send_status",
+            "message": {"status": status_text}
+        }
+    )
 
-def get_status(session_id):
-    return status_store.get(session_id, "Waiting...")
-
-@require_GET
-def get_progress(request):
-    session_id = request.GET.get("session_id")
-    if not session_id:
-        return JsonResponse({"status": "error", "message": "No session_id provided"}, status=400)
-    return JsonResponse({"status": get_status(session_id)})
 
 def delete_file_delayed(path, delay_seconds=600):
     def _delete():
@@ -41,6 +50,7 @@ def delete_file_delayed(path, delay_seconds=600):
             except Exception as e:
                 print(f"⚠️ Delete failed: {e}")
     threading.Thread(target=_delete).start()
+
 
 @csrf_exempt
 @require_POST
@@ -68,8 +78,8 @@ def ajax_merge_audio(request):
         merged = AudioSegment.empty()
         temp_files = []
 
-        set_status(session_id, "Uploading completed.")
-        set_status(session_id, "Merging started...")
+        send_progress(session_id, "Uploading completed.")
+        send_progress(session_id, "Merging started...")
 
         for file in files:
             temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.name)[1])
@@ -83,9 +93,9 @@ def ajax_merge_audio(request):
         temp_wav_path = os.path.join(output_dir, f"{session_id}_merged.wav")
         merged.export(temp_wav_path, format="wav")
 
-        set_status(session_id, "Tagging audio and exporting MP3...")
+        send_progress(session_id, "Tagging audio and exporting MP3...")
 
-        final_mp3_path = os.path.join(output_dir, f"{metadata['title']}.mp3")
+        final_mp3_path = os.path.join(output_dir, f"{session_id}_output.mp3")
         AudioSegment.from_wav(temp_wav_path).export(final_mp3_path, format="mp3")
 
         tags = EasyID3(final_mp3_path)
@@ -97,15 +107,15 @@ def ajax_merge_audio(request):
         tags.save()
 
         os.remove(temp_wav_path)
-        delete_file_delayed(final_mp3_path, delay_seconds=600)
+        delete_file_delayed(final_mp3_path, delay_seconds=600)  # auto-delete after 10 min
 
         output_url = f"/download/{os.path.basename(final_mp3_path)}/"
-        set_status(session_id, "✅ Merging complete. Ready to download.")
+        send_progress(session_id, "✅ Merging complete. Ready to download.")
 
         return JsonResponse({"status": "success", "download_url": output_url})
 
     except Exception as e:
-        set_status(session_id, f"❌ Error: {str(e)}")
+        send_progress(session_id, f"❌ Error: {str(e)}")
         return JsonResponse({"status": "error", "message": str(e)})
 
     finally:
@@ -116,7 +126,6 @@ def ajax_merge_audio(request):
                 pass
 
 def download_and_delete(request, filename):
-    from django.conf import settings
     file_path = os.path.join(settings.MEDIA_ROOT, filename)
     if not os.path.exists(file_path):
         raise Http404("File not found")

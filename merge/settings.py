@@ -36,9 +36,18 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+     "daphne",
     'django.contrib.staticfiles',
     'trackforge',
+    "channels",
 ]
+ASGI_APPLICATION = "merge.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 
 MIDDLEWARE = [

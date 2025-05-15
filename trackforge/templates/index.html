@@ -1,229 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <title>Flight Caved House – Audio Merger</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-        /* Reset and base styles */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8" />
+  <title>TrackForge – Audio Merger</title>
+  <style>
+    /* Reset and base styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
 
-        .container {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            width: 100%;
-            max-width: 500px;
-            margin: auto;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 24px;
-            font-size: 1.8em;
-            color: #e0e0e0;
-        }
+    h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 1.8em;
+      color: #e0e0e0;
+    }
 
-        form input[type="text"],
-        form input[type="file"],
-        form button {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-        }
+    form input[type="text"],
+    form input[type="file"],
+    form button {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+    }
 
-        form input[type="text"],
-        form input[type="file"] {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-        }
+    form input[type="text"],
+    form input[type="file"] {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
 
-        form input::placeholder {
-            color: #ccc;
-        }
+    form input::placeholder {
+      color: #ccc;
+    }
 
-        form button {
-            background: linear-gradient(135deg, #ff416c, #ff4b2b);
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
+    form button {
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
 
-        form button:hover {
-            background: linear-gradient(135deg, #ff4b2b, #ff416c);
-        }
+    form button:hover {
+      background: linear-gradient(135deg, #ff4b2b, #ff416c);
+    }
 
-        .progress-container {
-            margin-top: 30px;
-        }
+    .progress-container {
+      margin-top: 30px;
+    }
 
-        .progress-text {
-            font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 0.95em;
-            color: #ccc;
-        }
+    .progress-text {
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 0.95em;
+      color: #ccc;
+    }
 
-        .progress-bar-outer {
-            width: 100%;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            overflow: hidden;
-            height: 18px;
-        }
+    .progress-bar-outer {
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      overflow: hidden;
+      height: 18px;
+    }
 
-        .progress-bar-inner {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #00c6ff, #0072ff);
-            transition: width 0.4s ease-in-out;
-        }
+    .progress-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      transition: width 0.4s ease-in-out;
+    }
 
-        .status {
-            margin-top: 10px;
-            font-size: 0.95em;
-            font-weight: 500;
-            text-align: center;
-            color: #f1f1f1;
-        }
+    .status {
+      margin-top: 10px;
+      font-size: 0.95em;
+      font-weight: 500;
+      text-align: center;
+      color: #f1f1f1;
+    }
 
-        .result {
-            margin-top: 25px;
-            text-align: center;
-        }
+    .result {
+      margin-top: 25px;
+      text-align: center;
+    }
 
-        .result a {
-            color: #00ffc3;
-            text-decoration: none;
-            font-weight: bold;
-        }
+    .result a {
+      color: #00ffc3;
+      text-decoration: none;
+      font-weight: bold;
+    }
 
-        .result a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    .result a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <h2>🎧 Merge & Tag Your Audio</h2>
-        <form id="upload-form">
-            <input type="hidden" name="session_id" id="session_id" />
-            <input type="text" name="title" placeholder="Track Title" required />
-            <input type="text" name="artist" placeholder="Artist" required />
-            <input type="text" name="album" placeholder="Album (optional)" />
-            <input type="text" name="genre" placeholder="Genre (optional)" />
-            <input type="text" name="year" placeholder="Year" value="2025" />
-            <input type="file" name="audio_files" multiple required />
-            <button type="submit">Start Merge</button>
-        </form>
+  <div class="container">
+    <h2>🎧 Merge & Tag Your Audio</h2>
+    <form id="upload-form">
+      <input type="hidden" name="session_id" id="session_id" />
+      <input type="text" name="title" placeholder="Track Title" required />
+      <input type="text" name="artist" placeholder="Artist" required />
+      <input type="text" name="album" placeholder="Album (optional)" />
+      <input type="text" name="genre" placeholder="Genre (optional)" />
+      <input type="text" name="year" placeholder="Year" value="2025" />
+      <input type="file" name="audio_files" multiple required />
+      <button type="submit">Start Merge</button>
+    </form>
 
-        <div class="progress-container">
-            <div class="progress-text">Processing Status</div>
-            <div class="progress-bar-outer">
-                <div class="progress-bar-inner" id="progress-bar"></div>
-            </div>
-            <div class="status" id="progress-message">Waiting to upload...</div>
-        </div>
-
-        <div class="result" id="result"></div>
+    <div class="progress-container">
+      <div class="progress-text">Processing Status</div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progress-bar"></div>
+      </div>
+      <div class="status" id="progress-message">Waiting to upload...</div>
     </div>
 
-    <script>
-        const sessionID = Date.now().toString();
-        document.getElementById("session_id").value = sessionID;
+    <div class="result" id="result"></div>
+  </div>
 
-        const bar = document.getElementById("progress-bar");
-        const message = document.getElementById("progress-message");
-        const result = document.getElementById("result");
+  <script>
+    const sessionID = Date.now().toString();
+    document.getElementById("session_id").value = sessionID;
 
-        const statusMap = {
-            "Uploading": 10,
-            "Uploading completed": 30,
-            "Merging started": 60,
-            "Tagging": 80,
-            "complete": 100
-        };
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${protocol}://${window.location.host}/ws/status/${sessionID}/`);
+    const bar = document.getElementById("progress-bar");
+    const message = document.getElementById("progress-message");
+    const result = document.getElementById("result");
 
-        function startPolling(sessionID) {
-            const interval = setInterval(() => {
-                fetch(`/progress/?session_id=${sessionID}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        const status = data.status;
-                        message.textContent = status;
-                        for (let key in statusMap) {
-                            if (status.toLowerCase().includes(key.toLowerCase())) {
-                                bar.style.width = statusMap[key] + "%";
-                            }
-                        }
-                        if (status.includes("✅")) {
-                            clearInterval(interval);
-                        }
-                    });
-            }, 1000);
+    // Define progress phases
+    const statusMap = {
+      "Uploading": 10,
+      "Uploading completed": 30,
+      "Merging started": 60,
+      "Tagging": 80,
+      "complete": 100
+    };
+
+    socket.onmessage = function (e) {
+      const data = JSON.parse(e.data);
+      message.textContent = data.status;
+
+      for (let key in statusMap) {
+        if (data.status.toLowerCase().includes(key.toLowerCase())) {
+          bar.style.width = statusMap[key] + "%";
+          break;
         }
+      }
+    };
 
-        const form = document.getElementById("upload-form");
-        form.addEventListener("submit", function (e) {
-            e.preventDefault();
-            bar.style.width = "0%";
-            message.textContent = "Uploading...";
+    const form = document.getElementById("upload-form");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      bar.style.width = "0%";
+      message.textContent = "Uploading...";
 
-            const formData = new FormData(form);
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/merge/", true);
+      const formData = new FormData(form);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/merge/", true);
 
-            xhr.upload.onprogress = function (event) {
-                if (event.lengthComputable) {
-                    const percent = Math.round((event.loaded / event.total) * 100);
-                    const progress = Math.floor(percent * 0.3); // Upload is 0–30%
-                    bar.style.width = `${progress}%`;
-                    message.textContent = `Uploading: ${percent}%`;
-                }
-            };
+      xhr.upload.onprogress = function (event) {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          const uploadStage = Math.floor(percent * 0.3); // 0–30%
+          bar.style.width = `${uploadStage}%`;
+          message.textContent = "Uploading: " + percent + "%";
+        }
+      };
 
-            xhr.onload = function () {
-                if (xhr.status === 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.status === "success") {
-                        result.innerHTML = `<p><a href="${response.download_url}" download>Download Merged MP3</a></p>`;
-                    } else {
-                        message.textContent = "❌ " + response.message;
-                    }
-                }
-            };
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          if (response.status === "success") {
+            message.textContent = "✅ Upload complete!";
+            result.innerHTML = `<p><a href="${response.download_url}" download>Download Merged MP3</a></p>`;
+          } else {
+            message.textContent = "❌ " + response.message;
+          }
+        }
+      };
 
-            xhr.onerror = function () {
-                message.textContent = "❌ Upload failed. Please try again.";
-            };
+      xhr.onerror = function () {
+        message.textContent = "❌ Upload error. Please try again.";
+      };
 
-            xhr.send(formData);
-            startPolling(sessionID);
-        });
-    </script>
+      xhr.send(formData);
+    });
+  </script>
 </body>
-
 </html>
