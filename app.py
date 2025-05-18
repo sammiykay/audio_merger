@@ -69,6 +69,7 @@ st.subheader("Step 2: Add Metadata (Optional)")
 col1, col2 = st.columns(2)
 
 with col1:
+    title = st.text_input("Title")
     artist = st.text_input("Artist")
     album = st.text_input("Album")
     
@@ -124,7 +125,7 @@ if st.button("Merge Audio Files"):
                              progress_callback=lambda prog: progress_bar.progress(0.5 + prog * 0.3))  # 50-80% progress
             
             # Add metadata if provided
-            if any([artist, album, year, cover_image]):
+            if any([title, artist, album, year, cover_image]):
                 status_placeholder.info("Adding metadata...")
                 progress_bar.progress(0.8)  # 80% progress
                 
@@ -133,6 +134,7 @@ if st.button("Merge Audio Files"):
                     cover_image_data = cover_image.getvalue()
                 
                 add_metadata_to_audio(merged_audio_path, {
+                    "title": title,
                     "artist": artist,
                     "album": album,
                     "year": year,
@@ -141,11 +143,20 @@ if st.button("Merge Audio Files"):
             
             # Read the merged file to create a download link
             progress_bar.progress(0.9)  # 90% progress
+            
+            # Determine file name based on title or default
+            file_name = "merged_audio.mp3"
+            if title:
+                # Remove special characters that might cause issues in filenames
+                safe_title = "".join(c for c in title if c.isalnum() or c in [' ', '-', '_']).strip()
+                if safe_title:
+                    file_name = f"{safe_title}.mp3"
+            
             with open(merged_audio_path, "rb") as file:
                 btn = st.download_button(
                     label="Download Merged MP3",
                     data=file,
-                    file_name="merged_audio.mp3",
+                    file_name=file_name,
                     mime="audio/mpeg"
                 )
             
