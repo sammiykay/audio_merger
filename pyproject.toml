@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "eyed3>=0.9.8",
     "ffmpeg>=1.4",
     "mutagen>=1.47.0",
     "pillow>=11.2.1",

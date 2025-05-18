@@ -1,10 +1,9 @@
 import os
 import tempfile
 import io
-from pydub import AudioSegment
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, APIC, TIT2, TPE1, TALB, TDRC
 import time
+from pydub import AudioSegment
+import eyed3
 
 def merge_audio_files(file_paths, output_path, status_callback=None, progress_callback=None):
     """
@@ -67,7 +66,7 @@ def merge_audio_files(file_paths, output_path, status_callback=None, progress_ca
 
 def add_metadata_to_audio(audio_path, metadata):
     """
-    Add metadata to an MP3 file.
+    Add metadata to an MP3 file using eyed3.
     
     Args:
         audio_path (str): Path to the MP3 file
@@ -77,44 +76,41 @@ def add_metadata_to_audio(audio_path, metadata):
         str: Path to the MP3 file with metadata
     """
     try:
-        # Load the MP3 file
-        audio = MP3(audio_path)
+        # Load the audio file
+        audiofile = eyed3.load(audio_path)
         
-        # Create ID3 tag if it doesn't exist
-        if not audio.tags:
-            audio.tags = ID3()
+        # Create tag if it doesn't exist
+        if audiofile.tag is None:
+            audiofile.initTag()
         
         # Add title if provided
         if metadata.get("title"):
-            audio.tags.add(TIT2(encoding=3, text=metadata["title"]))
+            audiofile.tag.title = metadata["title"]
         
         # Add artist if provided
         if metadata.get("artist"):
-            audio.tags.add(TPE1(encoding=3, text=metadata["artist"]))
+            audiofile.tag.artist = metadata["artist"]
         
         # Add album if provided
         if metadata.get("album"):
-            audio.tags.add(TALB(encoding=3, text=metadata["album"]))
+            audiofile.tag.album = metadata["album"]
         
         # Add year if provided
         if metadata.get("year"):
-            audio.tags.add(TDRC(encoding=3, text=metadata["year"]))
+            try:
+                audiofile.tag.recording_date = metadata["year"]
+            except:
+                # Fallback if year is not in the correct format
+                pass
         
         # Add cover image if provided
         if metadata.get("cover_image"):
             image_data = metadata["cover_image"]
-            audio.tags.add(
-                APIC(
-                    encoding=3,
-                    mime="image/jpeg",
-                    type=3,  # 3 is for cover image
-                    desc="Cover",
-                    data=image_data
-                )
-            )
+            imageType = 3  # 3 means front cover
+            audiofile.tag.images.set(imageType, image_data, "image/jpeg", "Cover")
         
         # Save the changes
-        audio.save()
+        audiofile.tag.save()
         
     except Exception as e:
         print(f"Error adding metadata: {str(e)}")
