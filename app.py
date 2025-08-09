@@ -110,7 +110,14 @@ if st.button("Merge Audio Files"):
                 # Save the file to a temporary location
                 temp_file = os.path.join(temp_dir, file.name)
                 with open(temp_file, "wb") as f:
-                    f.write(file.getbuffer())
+                    # Reset pointer to the beginning of the file
+                    file.seek(0)
+                    # Read and write in chunks to avoid loading the whole file into memory
+                    while True:
+                        chunk = file.read(8192)  # 8KB chunks
+                        if not chunk:
+                            break
+                        f.write(chunk)
                 temp_files.append(temp_file)
                 
                 status_placeholder.info(f"Processing: Saved {i+1}/{len(uploaded_files)} files...")

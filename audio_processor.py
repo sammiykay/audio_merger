@@ -1,13 +1,12 @@
 import os
 import tempfile
 import io
-import time
-from pydub import AudioSegment
 import eyed3
+import subprocess
 
 def merge_audio_files(file_paths, output_path, status_callback=None, progress_callback=None):
     """
-    Merge multiple audio files into a single MP3 file.
+    Merge multiple audio files into a single MP3 file using ffmpeg for scalability.
     
     Args:
         file_paths (list): List of paths to audio files
@@ -21,47 +20,73 @@ def merge_audio_files(file_paths, output_path, status_callback=None, progress_ca
     if not file_paths:
         raise ValueError("No files provided for merging")
     
-    # Report status
     if status_callback:
         status_callback("Starting audio file merging...")
-    
-    # Initialize merged audio with the first file
+    if progress_callback:
+        progress_callback(0.1) # 10% progress
+
+    # Create a temporary file to list the input files for ffmpeg
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as temp_list_file:
+        for file_path in file_paths:
+            # ffmpeg requires paths to be escaped
+            temp_list_file.write(f"file '{file_path}'\n")
+        temp_list_path = temp_list_file.name
+
+    if status_callback:
+        status_callback("Generated file list for merging...")
+    if progress_callback:
+        progress_callback(0.3) # 30% progress
+
     try:
-        merged_audio = AudioSegment.from_file(file_paths[0])
-    except Exception as e:
-        raise ValueError(f"Error loading file {os.path.basename(file_paths[0])}: {str(e)}")
-    
-    # Process files in chunks to reduce memory usage
-    for i, file_path in enumerate(file_paths[1:], 1):
-        try:
-            if status_callback:
-                status_callback(f"Merging file {i+1}/{len(file_paths)}: {os.path.basename(file_path)}")
-            
-            # Load audio file
-            audio = AudioSegment.from_file(file_path)
-            
-            # Append to merged audio
-            merged_audio += audio
-            
-            # Report progress
-            if progress_callback:
-                progress_callback(i / (len(file_paths) - 1))
-                
-        except Exception as e:
-            raise ValueError(f"Error processing file {os.path.basename(file_path)}: {str(e)}")
-    
-    # Export as MP3 (use a reasonable bitrate for quality vs size)
+        # Construct the ffmpeg command
+        # -f concat: Use the concat demuxer
+        # -safe 0: Allow unsafe file paths (temp directory paths can be long)
+        # -i: Input file list
+        # -b:a 192k: Set audio bitrate to 192kbps
+        # -y: Overwrite output file if it exists
+        command = [
+            'ffmpeg',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', temp_list_path,
+            '-b:a', '192k',
+            '-y',
+            output_path
+        ]
+
+        if status_callback:
+            status_callback("Running ffmpeg to merge files... This may take a moment.")
+
+        # Execute the command
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+
+        if status_callback:
+            status_callback("ffmpeg process completed.")
+        if progress_callback:
+            progress_callback(0.9) # 90% progress
+
+    except subprocess.CalledProcessError as e:
+        # If ffmpeg fails, raise an error with its output for debugging
+        error_message = f"ffmpeg error: {e.stderr}"
+        if status_callback:
+            status_callback(error_message)
+        raise ValueError(error_message)
+    except FileNotFoundError:
+        # If ffmpeg is not installed or not in PATH
+        error_message = "ffmpeg not found. Please ensure ffmpeg is installed and in your system's PATH."
+        if status_callback:
+            status_callback(error_message)
+        raise RuntimeError(error_message)
+    finally:
+        # Clean up the temporary list file
+        if os.path.exists(temp_list_path):
+            os.remove(temp_list_path)
+
     if status_callback:
         status_callback("Exporting merged audio as MP3...")
-    
-    # Export in chunks to reduce memory usage
-    merged_audio.export(
-        output_path,
-        format="mp3",
-        bitrate="192k",
-        tags={"comment": "Created with Audio Merger"}
-    )
-    
+    if progress_callback:
+        progress_callback(1.0) # 100% progress
+
     return output_path
 
 def add_metadata_to_audio(audio_path, metadata):
